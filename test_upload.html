@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Image Upload</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8fafc;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #0f172a;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+        
+        .upload-area:hover {
+            border-color: #fb7185;
+            background: rgba(251, 113, 133, 0.05);
+        }
+        
+        .upload-area.dragover {
+            border-color: #fb7185;
+            background: rgba(251, 113, 133, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .upload-area p {
+            color: #64748b;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        #imagePreview {
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        #previewImg {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #fb7185;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        
+        .button:hover {
+            background: #f43f5e;
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            border-radius: 4px;
+            color: #047857;
+            display: none;
+        }
+        
+        .status.error {
+            background: #fef2f2;
+            border-left-color: #dc2626;
+            color: #991b1b;
+        }
+        
+        .log {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #1e293b;
+            color: #10b981;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 0.25rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Image Upload</h1>
+        
+        <div id="uploadArea" class="upload-area">
+            <div class="upload-icon">📤</div>
+            <p>Click to upload or drag and drop</p>
+            <span class="upload-hint">PNG, JPG, GIF • Up to 50MB</span>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+        
+        <div id="imagePreview">
+            <img id="previewImg" alt="Preview">
+            <button class="button" onclick="clearImage()">Clear Image</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="log">
+            <div class="log-entry"><strong>Console Logs:</strong></div>
+            <div id="logContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple logger to display in page
+        const logContent = document.getElementById('logContent');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function addLog(message, isError = false) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.style.color = isError ? '#ef4444' : '#10b981';
+            entry.textContent = (isError ? '❌ ' : '✓ ') + message;
+            logContent.appendChild(entry);
+            logContent.parentElement.scrollTop = logContent.parentElement.scrollHeight;
+            
+            if (isError) {
+                originalError(message);
+            } else {
+                originalLog(message);
+            }
+        }
+        
+        console.log = function(msg) {
+            addLog(msg);
+        };
+        
+        console.error = function(msg) {
+            addLog(msg, true);
+        };
+        
+        // ============ UPLOAD FEATURE ============
+        console.log('Initializing upload feature...');
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const statusDiv = document.getElementById('status');
+        
+        console.log('uploadArea found:', !!uploadArea);
+        console.log('fileInput found:', !!fileInput);
+        console.log('imagePreview found:', !!imagePreview);
+        console.log('previewImg found:', !!previewImg);
+        
+        // Click handler
+        uploadArea.addEventListener('click', function(e) {
+            console.log('Upload area clicked!');
+            fileInput.click();
+        });
+        
+        // Change handler
+        fileInput.addEventListener('change', function() {
+            console.log('File input changed!');
+            const file = this.files[0];
+            if (file) {
+                console.log('File selected:', file.name, file.size, 'bytes');
+                handleFileSelect(file);
+            }
+        });
+        
+        // Drag handlers
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Dragging over upload area');
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Dragging left upload area');
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('File dropped!');
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                console.log('Dropped file:', file.name, file.size, 'bytes');
+                handleFileSelect(file);
+            }
+        });
+        
+        function handleFileSelect(file) {
+            if (!file.type.match('image.*')) {
+                console.error('Not an image file!');
+                showStatus('Please select an image file', true);
+                return;
+            }
+            
+            console.log('Processing image file...');
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                console.log('FileReader onload triggered');
+                console.log('Data URL created, length:', e.target.result.length);
+                
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
+                
+                console.log('Image preview displayed!');
+                showStatus('Image uploaded successfully! ✓', false);
+            };
+            
+            reader.onerror = function(error) {
+                console.error('FileReader error:', error);
+                showStatus('Error reading file', true);
+            };
+            
+            reader.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    console.log('Reading file: ' + percentComplete + '%');
+                }
+            };
+            
+            console.log('Starting FileReader.readAsDataURL...');
+            reader.readAsDataURL(file);
+        }
+        
+        function clearImage() {
+            console.log('Clearing image...');
+            fileInput.value = '';
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'block';
+            statusDiv.style.display = 'none';
+        }
+        
+        function showStatus(message, isError) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status' + (isError ? ' error' : '');
+            statusDiv.style.display = 'block';
+        }
+        
+        console.log('Upload feature ready!');
+        showStatus('Ready - click or drag image to upload', false);
+    </script>
+</body>
+</html>

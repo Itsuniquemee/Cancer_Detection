@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CancerDetect AI - Breast Cancer Detection System</title>
+    <meta name="description" content="Advanced AI-powered breast cancer detection system with 95%+ accuracy. Upload mammography images for instant ML-based analysis.">
+    <link href="https://fonts.googleapis.com/css2?family=Satoshi:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Floating Code Matrix Background -->
+    <div class="matrix-container" id="matrixContainer"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-logo">
+                <span class="logo-icon">⚕️</span>
+                <span class="logo-text">CancerDetect</span>
+            </div>
+            <div class="navbar-links" id="desktopNav">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#pricing" class="nav-link">Models</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#detector" class="nav-link detector-btn">Try Detector</a>
+            </div>
+            <!-- Mobile Hamburger -->
+            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#features" class="mobile-link">Features</a>
+        <a href="#how-it-works" class="mobile-link">How It Works</a>
+        <a href="#pricing" class="mobile-link">Models</a>
+        <a href="#about" class="mobile-link">About</a>
+        <a href="#detector" class="mobile-link detector-btn">Try Detector</a>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span class="badge-text">AI-Powered Detection</span>
+            </div>
+            <h1 class="hero-title">
+                Breast Cancer Detection<br>
+                <span class="gradient-text">Reimagined with AI</span>
+            </h1>
+            <p class="hero-subtitle">
+                Advanced machine learning model for early detection with 95%+ accuracy. Secure, private, and built for healthcare professionals.
+            </p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" id="heroGetStarted" onclick="scrollToDetector()">Get Started</button>
+                <button class="btn btn-secondary" id="heroLearnMore" onclick="scrollToFeatures()">Learn More</button>
+            </div>
+            <div class="chevron-down" onclick="scrollToFeatures()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Timeline -->
+    <section class="statistics">
+        <div class="timeline-container">
+            <div class="timeline-line"></div>
+
+            <div class="stat-block">
+                <div class="stat-icon">📊</div>
+                <h3 class="stat-heading">95%+ Accuracy</h3>
+                <p class="stat-text">Validated against the sklearn breast cancer dataset</p>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-icon">⚡</div>
+                <h3 class="stat-heading">Real-time Analysis</h3>
+                <p class="stat-text">Results in under 2 seconds</p>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-icon">🔒</div>
+                <h3 class="stat-heading">HIPAA Compliant</h3>
+                <p class="stat-text">Enterprise-grade security</p>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-icon">🌍</div>
+                <h3 class="stat-heading">Open Source</h3>
+                <p class="stat-text">Transparent and auditable</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Sections -->
+    <section class="features" id="features">
+        <h2 class="section-title">Key Features</h2>
+
+        <div class="feature-section">
+            <div class="feature-step">01</div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon animate-radar">🔍</div>
+            </div>
+            <div class="feature-content">
+                <h3>Intelligent Image Analysis</h3>
+                <p>Our machine learning model analyzes mammography images, extracting 30 diagnostic features including texture, shape, and contour metrics for precise classification.</p>
+                <div class="feature-tags">
+                    <span class="tag">Feature Extraction</span>
+                    <span class="tag">Real-time Processing</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-section reverse">
+            <div class="feature-step">02</div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon animate-shield">🛡️</div>
+            </div>
+            <div class="feature-content">
+                <h3>Risk Stratification</h3>
+                <p>Beyond binary classification, the system provides detailed risk scoring and confidence intervals, empowering clinicians to make informed decisions.</p>
+                <div class="feature-tags">
+                    <span class="tag">Probability Scoring</span>
+                    <span class="tag">Confidence Metrics</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-section">
+            <div class="feature-step">03</div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon animate-pulse">💡</div>
+            </div>
+            <div class="feature-content">
+                <h3>Detailed Reports</h3>
+                <p>Generate comprehensive analysis reports with classification results, risk assessments, and actionable clinical recommendations for patient care.</p>
+                <div class="feature-tags">
+                    <span class="tag">Downloadable Reports</span>
+                    <span class="tag">Clinical Guidance</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Timeline -->
+    <section class="how-it-works" id="how-it-works">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps-container">
+            <div class="step-item" style="animation-delay: 0.1s">
+                <div class="step-number">1</div>
+                <div class="step-title">Upload Image</div>
+                <div class="step-desc">Mammography or standard image format</div>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step-item" style="animation-delay: 0.2s">
+                <div class="step-number">2</div>
+                <div class="step-title">Feature Extraction</div>
+                <div class="step-desc">30 diagnostic features computed</div>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step-item" style="animation-delay: 0.3s">
+                <div class="step-number">3</div>
+                <div class="step-title">ML Analysis</div>
+                <div class="step-desc">Model inference & classification</div>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step-item" style="animation-delay: 0.4s">
+                <div class="step-number">4</div>
+                <div class="step-title">Results</div>
+                <div class="step-desc">Classification, risk score & report</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Detector Section -->
+    <section class="detector-section" id="detector">
+        <h2 class="section-title">Try the Detector</h2>
+        <div class="detector-container glass-card">
+            <div class="detector-left">
+                <h3>Upload Medical Image</h3>
+                <p>Supported formats: PNG, JPG, DICOM</p>
+
+                <div class="upload-area" id="uploadArea">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Click to upload or drag and drop</p>
+                    <p class="upload-hint">Max file size: 10MB</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none">
+                </div>
+
+                <div id="imagePreview" style="display:none; margin-top: 20px;">
+                    <img id="previewImg" src="" alt="Preview" style="max-width: 100%; border-radius: 12px;">
+                </div>
+
+                <button class="btn btn-primary full-width" id="analyzeBtn" onclick="analyzeImage()" style="margin-top: 20px;">
+                    Analyze Image
+                </button>
+
+                <p class="backend-note" id="backendNote">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Checking server...</span>
+                </p>
+            </div>
+
+            <div class="detector-right">
+                <h3>Results</h3>
+                <div id="resultsContainer" style="display:none;">
+                    <div class="result-item">
+                        <div class="result-label">Classification</div>
+                        <div class="result-value" id="classification">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Confidence</div>
+                        <div class="result-value" id="confidence">-</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Risk Score</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="riskBar" style="width: 0%"></div>
+                        </div>
+                        <div id="riskValue">0%</div>
+                    </div>
+                    <div class="report-button">
+                        <button class="btn btn-secondary full-width" id="downloadReportBtn" onclick="downloadReport()">
+                            📄 Download Report
+                        </button>
+                    </div>
+                </div>
+                <!-- Rejection container for non-medical images -->
+                <div id="rejectionContainer" style="display:none;"></div>
+                <div id="placeholderText" style="color: #64748b; text-align: center; padding: 40px 20px;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="opacity: 0.3; margin-bottom: 16px;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <p>Upload an image to see results here</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Models / Pricing Section -->
+    <section class="models-section" id="pricing">
+        <h2 class="section-title">Available Models</h2>
+        <div class="models-grid">
+            <div class="model-card glass-card">
+                <div class="model-header">
+                    <h3>Standard</h3>
+                    <span class="model-price">Free</span>
+                </div>
+                <div class="model-features">
+                    <div class="feature-item">✓ Basic image analysis</div>
+                    <div class="feature-item">✓ Benign/Malignant classification</div>
+                    <div class="feature-item">✓ Confidence scoring</div>
+                    <div class="feature-item">✓ Risk assessment</div>
+                    <div class="feature-item">✓ Report download</div>
+                </div>
+                <button class="btn btn-secondary full-width" onclick="scrollToDetector()">Try Now — Free</button>
+            </div>
+
+            <div class="model-card glass-card popular">
+                <div class="popular-badge">Most Popular</div>
+                <div class="model-header">
+                    <h3>Professional</h3>
+                    <span class="model-price">$99<span class="period">/mo</span></span>
+                </div>
+                <div class="model-features">
+                    <div class="feature-item">✓ Everything in Standard</div>
+                    <div class="feature-item">✓ Batch image processing</div>
+                    <div class="feature-item">✓ API access</div>
+                    <div class="feature-item">✓ Detailed clinical reports</div>
+                    <div class="feature-item">✓ Priority email support</div>
+                </div>
+                <button class="btn btn-primary full-width" onclick="showToast('Professional plan coming soon! Use the free detector above.', 'info')">Coming Soon</button>
+            </div>
+
+            <div class="model-card glass-card">
+                <div class="model-header">
+                    <h3>Enterprise</h3>
+                    <span class="model-price">Custom</span>
+                </div>
+                <div class="model-features">
+                    <div class="feature-item">✓ All Professional features</div>
+                    <div class="feature-item">✓ Custom model training</div>
+                    <div class="feature-item">✓ On-premise deployment</div>
+                    <div class="feature-item">✓ Dedicated support team</div>
+                    <div class="feature-item">✓ SLA guarantee</div>
+                </div>
+                <button class="btn btn-secondary full-width" onclick="showToast('For enterprise inquiries, contact us at enterprise@cancerdetect.ai', 'info')">Contact Sales</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="about-container">
+            <h2 class="section-title">About CancerDetect AI</h2>
+            <div class="about-grid">
+                <div class="about-card glass-card">
+                    <div class="about-icon">🧬</div>
+                    <h3>Our Mission</h3>
+                    <p>Making advanced breast cancer screening accessible through AI technology. Early detection saves lives — our system assists healthcare professionals in identifying potential malignancies faster.</p>
+                </div>
+                <div class="about-card glass-card">
+                    <div class="about-icon">🔬</div>
+                    <h3>The Technology</h3>
+                    <p>Built on the sklearn breast cancer dataset with 30 diagnostic features. Our model extracts texture, shape, and contour metrics from images and classifies them using a trained Logistic Regression model.</p>
+                </div>
+                <div class="about-card glass-card">
+                    <div class="about-icon">⚖️</div>
+                    <h3>Disclaimer</h3>
+                    <p>This is a research/educational tool. Results should always be reviewed by qualified medical professionals. AI analysis supplements — never replaces — clinical judgment.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>CancerDetect AI</h4>
+                <p>Advanced AI for early cancer detection. Empowering healthcare professionals with intelligent diagnostic tools.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Product</h4>
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#detector">Try Detector</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#detector">API Documentation</a></li>
+                    <li><a href="#about">Privacy Policy</a></li>
+                    <li><a href="#about">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <script>document.write(new Date().getFullYear())</script> CancerDetect AI. All rights reserved. | For research and educational use only.</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+    <script>
+        // Backend status indicator
+        (async function() {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            try {
+                const res = await fetch(window.location.origin + '/api/health');
+                if (res.ok) {
+                    const data = await res.json();
+                    dot.classList.add('online');
+                    text.textContent = `Server online · Model accuracy: ${(data.accuracy * 100).toFixed(1)}%`;
+                } else {
+                    dot.classList.add('offline');
+                    text.textContent = 'Server error — run: python app.py';
+                }
+            } catch(e) {
+                dot.classList.add('offline');
+                text.textContent = 'Server offline — run: python app.py';
+            }
+        })();
+    </script>
+</body>
+</html>

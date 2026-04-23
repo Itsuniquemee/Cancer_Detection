@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Advanced Breast Cancer Detection Platform - AI-Powered Diagnostic Tool">
+    <meta name="keywords" content="breast cancer, mammography, AI, diagnosis, healthcare">
+    <title>CancerDetect Pro - Advanced Diagnostic Platform</title>
+    <link rel="stylesheet" href="css/style_advanced.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+    <!-- ============ NAVIGATION ============ -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-microscope"></i>
+                <span>CancerDetect</span>
+                <sup>PRO v2.0</sup>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="#analysis" class="nav-link">Analysis</a></li>
+                <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                <li><a href="#model-info" class="nav-link">Model Info</a></li>
+                <li><a href="#analytics" class="nav-link">Analytics</a></li>
+                <li><a href="#documentation" class="nav-link">Docs</a></li>
+            </ul>
+            <div class="nav-status">
+                <span id="api-status" class="status-indicator"></span>
+                <span id="status-text">Initializing...</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============ HERO SECTION ============ -->
+    <section id="home" class="hero">
+        <div id="matrixContainer" class="matrix-background"></div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>AI-Powered Medical Analysis</span>
+            </div>
+            <h1>Breast Cancer Detection Platform</h1>
+            <p>Advanced machine learning model with 95%+ accuracy for mammography analysis</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="scrollTo('analysis')">
+                    Start Analysis <i class="fas fa-arrow-right"></i>
+                </button>
+                <button class="btn btn-secondary" onclick="scrollTo('model-info')">
+                    Learn More <i class="fas fa-book"></i>
+                </button>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-value" id="stat-accuracy">95.2%</span>
+                    <span class="stat-label">Accuracy</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="stat-predictions">0</span>
+                    <span class="stat-label">Analyses</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">24/7</span>
+                    <span class="stat-label">Available</span>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span class="mouse"></span>
+        </div>
+    </section>
+
+    <!-- ============ ANALYSIS SECTION ============ -->
+    <section id="analysis" class="analysis-section">
+        <div class="container">
+            <h2>AI-Powered Analysis</h2>
+            <div class="analysis-grid">
+                <!-- Upload Panel -->
+                <div class="analysis-panel">
+                    <h3>Upload Mammography</h3>
+                    <div id="uploadArea" class="upload-area">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <p>Click to upload or drag and drop</p>
+                        <span class="upload-hint">PNG, JPG up to 10MB</span>
+                        <input type="file" id="fileInput" accept="image/*" hidden>
+                    </div>
+                    <div id="imagePreview" style="display: none;">
+                        <img id="previewImg" alt="Preview">
+                        <button onclick="clearImage()" class="btn-text">Change Image</button>
+                    </div>
+                </div>
+
+                <!-- Results Panel -->
+                <div class="analysis-panel">
+                    <h3>Analysis Results</h3>
+                    <div id="resultsContainer" class="results-container" style="display: none;">
+                        <div class="result-box">
+                            <div class="result-header">
+                                <h4>Classification</h4>
+                                <span id="classification" class="classification-badge">-</span>
+                            </div>
+                            <div class="result-body">
+                                <div class="metric">
+                                    <label>Confidence</label>
+                                    <div class="progress-bar">
+                                        <div id="confidenceBar" class="progress-fill"></div>
+                                    </div>
+                                    <span id="confidence" class="metric-value">0%</span>
+                                </div>
+                                <div class="metric">
+                                    <label>Risk Score</label>
+                                    <div class="progress-bar">
+                                        <div id="riskBar" class="progress-fill"></div>
+                                    </div>
+                                    <span id="riskValue" class="metric-value">0%</span>
+                                </div>
+                                <div class="metric">
+                                    <label>Risk Level</label>
+                                    <span id="riskLevel" class="risk-level">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detailed Results -->
+                        <div class="result-details">
+                            <h4>Detailed Analysis</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>Model Type</label>
+                                    <span id="modelType">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Processing Time</label>
+                                    <span id="processingTime">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Probability (Malignant)</label>
+                                    <span id="probMalignant">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Probability (Benign)</label>
+                                    <span id="probBenign">-</span>
+                                </div>
+                            </div>
+
+                            <!-- Confidence Interval -->
+                            <div class="confidence-interval">
+                                <h5>95% Confidence Interval</h5>
+                                <div class="ci-bar">
+                                    <div id="ciRange" class="ci-range"></div>
+                                </div>
+                                <div class="ci-labels">
+                                    <span id="ciLower">0%</span>
+                                    <span id="ciUpper">100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="recommendations">
+                            <h4>Clinical Recommendations</h4>
+                            <div class="rec-box">
+                                <div class="rec-urgency">
+                                    <strong>Urgency Level:</strong>
+                                    <span id="urgencyLevel" class="urgency-badge">-</span>
+                                </div>
+                                <div class="rec-action">
+                                    <strong>Recommended Action:</strong>
+                                    <p id="action">-</p>
+                                </div>
+                                <div class="rec-steps">
+                                    <strong>Next Steps:</strong>
+                                    <ol id="nextSteps"></ol>
+                                </div>
+                                <div class="rec-disclaimer">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>This analysis is for informational purposes. Final diagnosis must be made by qualified medical professionals.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="result-actions">
+                            <button id="downloadBtn" class="btn btn-primary" onclick="downloadReport()">
+                                <i class="fas fa-download"></i> Download Report
+                            </button>
+                            <button id="explainBtn" class="btn btn-secondary" onclick="explainPrediction()">
+                                <i class="fas fa-lightbulb"></i> Explain Result
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Placeholder -->
+                    <div id="placeholderText" class="placeholder">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>Upload an image and click "Analyze" to see results</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="analysis-action">
+                <button id="analyzeBtn" class="btn btn-large" onclick="analyzeImage()" disabled>
+                    <span id="analyzeBtnText">Analyze Image</span>
+                    <span id="analyzeBtnSpinner" class="spinner" style="display: none;"></span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2>How the Model Works</h2>
+            <div class="process-timeline">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <h4>Image Upload</h4>
+                    <p>Upload mammography scan (PNG/JPG)</p>
+                </div>
+                <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <h4>Feature Extraction</h4>
+                    <p>Extract 30 quantitative features</p>
+                </div>
+                <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <h4>Model Prediction</h4>
+                    <p>ML model analyzes features</p>
+                </div>
+                <div class="process-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <h4>Results & Insights</h4>
+                    <p>Get classification & confidence</p>
+                </div>
+            </div>
+
+            <div class="feature-extraction-details">
+                <h3>30-Feature Extraction Pipeline</h3>
+                <div class="feature-grid">
+                    <div class="feature-category">
+                        <h5>Basic Statistics (5)</h5>
+                        <ul>
+                            <li>Mean Pixel Value</li>
+                            <li>Standard Deviation</li>
+                            <li>Max-Min Range</li>
+                            <li>Variance</li>
+                            <li>Smoothness</li>
+                        </ul>
+                    </div>
+                    <div class="feature-category">
+                        <h5>Edge Features (5)</h5>
+                        <ul>
+                            <li>Edge Density</li>
+                            <li>Edge Count</li>
+                            <li>Edge Variance</li>
+                            <li>Skewness</li>
+                            <li>Kurtosis</li>
+                        </ul>
+                    </div>
+                    <div class="feature-category">
+                        <h5>Histogram Features (10)</h5>
+                        <ul>
+                            <li>Histogram Max/Mean</li>
+                            <li>Histogram Std Dev</li>
+                            <li>Quartiles (Q1/Q2/Q3)</li>
+                            <li>Dark/Bright Pixels</li>
+                            <li>Entropy</li>
+                        </ul>
+                    </div>
+                    <div class="feature-category">
+                        <h5>Advanced Texture (10)</h5>
+                        <ul>
+                            <li>Percentile Values</li>
+                            <li>Contrast Metrics</li>
+                            <li>Gradient Magnitude</li>
+                            <li>Texture Energy</li>
+                            <li>Homogeneity</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ MODEL INFORMATION ============ -->
+    <section id="model-info" class="model-info">
+        <div class="container">
+            <h2>Model Information</h2>
+            <div class="model-grid">
+                <div class="model-card">
+                    <h4>Dataset</h4>
+                    <div id="datasetInfo"></div>
+                </div>
+                <div class="model-card">
+                    <h4>Performance Metrics</h4>
+                    <div id="metricsInfo"></div>
+                </div>
+                <div class="model-card">
+                    <h4>Model Details</h4>
+                    <div id="modelDetails"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ ANALYTICS ============ -->
+    <section id="analytics" class="analytics-section">
+        <div class="container">
+            <h2>System Analytics</h2>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h4>Total Analyses</h4>
+                    <span id="totalAnalyses" class="analytics-value">0</span>
+                </div>
+                <div class="analytics-card">
+                    <h4>Malignant Cases</h4>
+                    <span id="malignantCount" class="analytics-value">0</span>
+                </div>
+                <div class="analytics-card">
+                    <h4>Benign Cases</h4>
+                    <span id="benignCount" class="analytics-value">0</span>
+                </div>
+                <div class="analytics-card">
+                    <h4>Avg Confidence</h4>
+                    <span id="avgConfidence" class="analytics-value">0%</span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="resultsChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ DOCUMENTATION ============ -->
+    <section id="documentation" class="documentation">
+        <div class="container">
+            <h2>Documentation</h2>
+            <div class="docs-grid">
+                <div class="doc-card">
+                    <h4>Getting Started</h4>
+                    <p>Learn how to use the platform and interpret results.</p>
+                    <a href="#" class="doc-link">Read Guide →</a>
+                </div>
+                <div class="doc-card">
+                    <h4>API Reference</h4>
+                    <p>Integrate the AI model into your applications.</p>
+                    <a href="#" class="doc-link">View API →</a>
+                </div>
+                <div class="doc-card">
+                    <h4>FAQ</h4>
+                    <p>Frequently asked questions about the system.</p>
+                    <a href="#" class="doc-link">Read FAQ →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 CancerDetect Pro - AI-Powered Diagnostic Platform</p>
+            <p class="disclaimer">
+                <strong>Medical Disclaimer:</strong> This system is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Explanation Modal -->
+    <div id="explanationModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Prediction Explanation</h3>
+            <div id="explanationBody"></div>
+        </div>
+    </div>
+
+    <script src="js/script_advanced.js"></script>
+</body>
+</html>

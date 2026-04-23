@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Diagnostic - Check Everything</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            background: #f5f5f5;
+            padding: 2rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { margin-bottom: 2rem; color: #333; }
+        .test-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .test-box h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .status.pass { background: #d4edda; color: #155724; }
+        .status.fail { background: #f8d7da; color: #721c24; }
+        .status.pending { background: #fff3cd; color: #856404; }
+        .code { 
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+        .upload-test {
+            border: 2px dashed #999;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            background: #f9f9f9;
+            user-select: none;
+        }
+        .upload-test:hover { border-color: #fb7185; background: #fff5f7; }
+        .upload-test.active { border-color: #fb7185; background: #ffe4e8; }
+        #preview { max-width: 300px; margin-top: 1rem; border-radius: 4px; }
+        .console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .console .log { display: block; margin: 0.25rem 0; }
+        .console .error { color: #f48771; }
+        .console .success { color: #89d185; }
+        .console .warning { color: #f5d547; }
+        button {
+            background: #fb7185;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+        button:hover { background: #fa4d6f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Upload Diagnostic Tool</h1>
+        
+        <!-- 1. DOM CHECK -->
+        <div class="test-box">
+            <h3>1. DOM Elements Check</h3>
+            <p><span id="test1Status" class="status pending">CHECKING...</span></p>
+            <div id="test1Output"></div>
+        </div>
+        
+        <!-- 2. EVENT LISTENER TEST -->
+        <div class="test-box">
+            <h3>2. Event Listeners Test</h3>
+            <p><span id="test2Status" class="status pending">CHECKING...</span></p>
+            <div id="test2Output"></div>
+        </div>
+        
+        <!-- 3. SIMPLE UPLOAD TEST -->
+        <div class="test-box">
+            <h3>3. Simple Upload Test</h3>
+            <p><span id="test3Status" class="status pending">READY</span></p>
+            <div class="upload-test" id="simpleUpload">
+                Click here to upload an image
+            </div>
+            <input type="file" id="simpleInput" accept="image/*" style="display: none;">
+            <img id="preview" style="display: none;">
+            <div class="console" id="console"></div>
+        </div>
+        
+        <!-- 4. index_premium.html CHECK -->
+        <div class="test-box">
+            <h3>4. Main Page Analysis Section Check</h3>
+            <p><span id="test4Status" class="status pending">WILL CHECK ON LOAD</span></p>
+            <div id="test4Output"></div>
+        </div>
+
+        <!-- 5. BROWSER INFO -->
+        <div class="test-box">
+            <h3>5. Browser & Environment Info</h3>
+            <div class="code" id="browserInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        // Logging system
+        const logs = [];
+        function addLog(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push({ message, type, timestamp });
+            const console_el = document.getElementById('console');
+            if (console_el) {
+                const div = document.createElement('div');
+                div.className = `log ${type}`;
+                div.textContent = `[${timestamp}] ${message}`;
+                console_el.appendChild(div);
+                console_el.scrollTop = console_el.scrollHeight;
+            }
+        }
+
+        // TEST 1: DOM ELEMENTS
+        function test1() {
+            const output = document.getElementById('test1Output');
+            const status = document.getElementById('test1Status');
+            let html = '<div style="font-size: 0.9rem;">';
+            let allGood = true;
+
+            const elements = {
+                'uploadArea': 'Main upload area',
+                'fileInput': 'File input element',
+                'imagePreview': 'Image preview container',
+                'previewImg': 'Preview image element',
+                'resultsContainer': 'Results container',
+                'resultClassification': 'Classification result',
+                'emptyState': 'Empty state message',
+                'analysisSection': 'Analysis section'
+            };
+
+            for (const [id, desc] of Object.entries(elements)) {
+                const el = document.getElementById(id);
+                const exists = !!el;
+                allGood = allGood && exists;
+                html += `<p>✓ ${desc} (${id}): <strong>${exists ? 'FOUND' : 'MISSING'}</strong></p>`;
+            }
+
+            html += '</div>';
+            output.innerHTML = html;
+            status.textContent = allGood ? 'PASS' : 'FAIL';
+            status.className = `status ${allGood ? 'pass' : 'fail'}`;
+            return allGood;
+        }
+
+        // TEST 2: EVENT LISTENERS
+        function test2() {
+            const output = document.getElementById('test2Output');
+            const status = document.getElementById('test2Status');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            let html = '<div style="font-size: 0.9rem;">';
+            let allGood = true;
+
+            if (uploadArea && fileInput) {
+                html += '<p>✓ Elements found, testing listeners...</p>';
+                html += '<p>Attempting click on uploadArea...</p>';
+                
+                let clickFired = false;
+                const testClick = () => {
+                    clickFired = true;
+                    html += '<p style="color: green;">✓ Click listener working!</p>';
+                };
+                
+                uploadArea.addEventListener('click', testClick, { once: true });
+                try {
+                    const clickEvent = new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    uploadArea.dispatchEvent(clickEvent);
+                    allGood = clickFired;
+                } catch (e) {
+                    html += `<p style="color: red;">✗ Error: ${e.message}</p>`;
+                    allGood = false;
+                }
+            } else {
+                html += '<p style="color: red;">✗ Elements not found</p>';
+                allGood = false;
+            }
+
+            html += '</div>';
+            output.innerHTML = html;
+            status.textContent = allGood ? 'PASS' : 'FAIL';
+            status.className = `status ${allGood ? 'pass' : 'fail'}`;
+            return allGood;
+        }
+
+        // TEST 3: SIMPLE UPLOAD (INTERACTIVE)
+        function test3() {
+            const simpleUpload = document.getElementById('simpleUpload');
+            const simpleInput = document.getElementById('simpleInput');
+            const preview = document.getElementById('preview');
+            const status = document.getElementById('test3Status');
+
+            addLog('Simple upload test initialized', 'success');
+
+            simpleUpload.addEventListener('click', () => {
+                addLog('Upload area clicked', 'log');
+                simpleInput.click();
+            });
+
+            simpleUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                simpleUpload.classList.add('active');
+                addLog('Drag over detected', 'log');
+            });
+
+            simpleUpload.addEventListener('dragleave', () => {
+                simpleUpload.classList.remove('active');
+                addLog('Drag leave detected', 'log');
+            });
+
+            simpleUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                simpleUpload.classList.remove('active');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    addLog(`File dropped: ${files[0].name}`, 'success');
+                    handleFile(files[0]);
+                }
+            });
+
+            simpleInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    addLog(`File selected: ${e.target.files[0].name}`, 'success');
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            function handleFile(file) {
+                addLog(`Processing: ${file.name} (${(file.size / 1024).toFixed(2)}KB)`, 'log');
+                
+                if (!file.type.match('image.*')) {
+                    addLog('ERROR: Not an image file!', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onloadstart = () => addLog('Reading file...', 'log');
+                reader.onprogress = (e) => addLog(`Progress: ${((e.loaded / e.total) * 100).toFixed(0)}%`, 'log');
+                reader.onload = (e) => {
+                    addLog('File read complete, displaying preview...', 'success');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    status.textContent = 'SUCCESS';
+                    status.className = 'status pass';
+                    addLog('✓ Image displayed successfully!', 'success');
+                };
+                reader.onerror = () => {
+                    addLog('ERROR: Could not read file', 'error');
+                    status.textContent = 'FAILED';
+                    status.className = 'status fail';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // TEST 4: CHECK MAIN PAGE
+        function test4() {
+            const output = document.getElementById('test4Output');
+            const status = document.getElementById('test4Status');
+            let html = '<div style="font-size: 0.9rem;">';
+
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            if (uploadArea && fileInput) {
+                html += '<p>✓ uploadArea and fileInput found</p>';
+                
+                // Check CSS
+                const style = window.getComputedStyle(uploadArea);
+                html += `<p>Upload area display: ${style.display}</p>`;
+                html += `<p>Upload area visibility: ${style.visibility}</p>`;
+                html += `<p>Upload area opacity: ${style.opacity}</p>`;
+                html += `<p>Upload area pointer-events: ${style.pointerEvents}</p>`;
+
+                // Check if clickable
+                html += '<p><button onclick="testClickMainPage()">Test Click on Main uploadArea</button></p>';
+                
+                status.textContent = 'READY';
+                status.className = 'status pending';
+            } else {
+                html += '<p style="color: red;">✗ Elements not found</p>';
+                status.textContent = 'NOT FOUND';
+                status.className = 'status fail';
+            }
+
+            html += '</div>';
+            output.innerHTML = html;
+        }
+
+        // TEST 5: BROWSER INFO
+        function test5() {
+            const browserInfo = document.getElementById('browserInfo');
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Browser': getBrowserName(),
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Cookies Enabled': navigator.cookieEnabled,
+                'Online Status': navigator.onLine ? 'Online' : 'Offline',
+                'Screen Size': `${window.innerWidth}x${window.innerHeight}`,
+                'Device Memory': navigator.deviceMemory || 'Unknown',
+                'Cores': navigator.hardwareConcurrency || 'Unknown',
+                'Local Storage': checkLocalStorage(),
+                'FileReader API': typeof FileReader !== 'undefined' ? 'Supported' : 'Not supported'
+            };
+
+            let html = '';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<p><strong>${key}:</strong> ${value}</p>`;
+            }
+            browserInfo.innerHTML = html;
+        }
+
+        function getBrowserName() {
+            const ua = navigator.userAgent;
+            if (ua.indexOf('Firefox') > -1) return 'Firefox';
+            if (ua.indexOf('Chrome') > -1) return 'Chrome';
+            if (ua.indexOf('Safari') > -1) return 'Safari';
+            if (ua.indexOf('Edge') > -1) return 'Edge';
+            return 'Unknown';
+        }
+
+        function checkLocalStorage() {
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                return 'Available';
+            } catch {
+                return 'Not available';
+            }
+        }
+
+        window.testClickMainPage = function() {
+            const uploadArea = document.getElementById('uploadArea');
+            if (uploadArea) {
+                addLog('Simulating click on main uploadArea...', 'log');
+                uploadArea.click();
+                addLog('Click triggered', 'success');
+            }
+        };
+
+        // RUN ALL TESTS
+        window.addEventListener('DOMContentLoaded', () => {
+            addLog('Diagnostic page loaded', 'success');
+            test1();
+            test2();
+            test3();
+            test4();
+            test5();
+        });
+    </script>
+</body>
+</html>

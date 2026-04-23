@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Upload Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .box { border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer; }
+        .box:hover { border-color: red; }
+        img { max-width: 300px; margin-top: 20px; }
+        #log { background: #f0f0f0; padding: 10px; margin-top: 20px; font-family: monospace; white-space: pre; overflow: auto; max-height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Simple Upload Test</h1>
+    
+    <div class="box" id="uploadBox">
+        Click here or drag image
+    </div>
+    
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+    <img id="preview" style="display:none;">
+    
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        const box = document.getElementById('uploadBox');
+        const input = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        
+        function addLog(msg) {
+            log.textContent += msg + '\n';
+            log.scrollTop = log.scrollHeight;
+            console.log(msg);
+        }
+        
+        addLog('Page loaded');
+        
+        // Click
+        box.addEventListener('click', () => {
+            addLog('Click event fired');
+            input.click();
+        });
+        
+        // Drag
+        box.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            addLog('Dragover event');
+            box.style.borderColor = 'red';
+        });
+        
+        box.addEventListener('dragleave', () => {
+            addLog('Dragleave event');
+            box.style.borderColor = '#ccc';
+        });
+        
+        box.addEventListener('drop', (e) => {
+            e.preventDefault();
+            addLog('Drop event');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+        
+        // File input
+        input.addEventListener('change', () => {
+            addLog('File input change event');
+            if (input.files.length > 0) {
+                processFile(input.files[0]);
+            }
+        });
+        
+        function processFile(file) {
+            addLog(`Processing: ${file.name} (${file.size} bytes)`);
+            
+            if (!file.type.match('image.*')) {
+                addLog('ERROR: Not an image!');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                addLog('FileReader onload - image loaded!');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                addLog('SUCCESS: Image displayed!');
+            };
+            reader.onerror = () => {
+                addLog('ERROR: FileReader failed');
+            };
+            addLog('Starting FileReader...');
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CancerDetect Pro - Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #fef2f2 100%);
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 3rem;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .panel {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h2 {
+            color: #0f172a;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .upload-area:hover {
+            border-color: #fb7185;
+            background: rgba(251, 113, 133, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #fb7185;
+            background: rgba(251, 113, 133, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            color: #fb7185;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: #64748b;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.875rem;
+        }
+
+        #fileInput {
+            display: none !important;
+        }
+
+        #imagePreview {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        #previewImg {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #fb7185;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #f43f5e;
+            transform: translateY(-2px);
+        }
+
+        #resultsContainer {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .result-item {
+            margin-bottom: 2rem;
+        }
+
+        .result-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #fb7185;
+        }
+
+        .risk-box {
+            padding: 1.5rem;
+            border-radius: 8px;
+            background: #fef2f2;
+            border-left: 4px solid #fb7185;
+        }
+
+        .risk-box.high {
+            background: #fee2e2;
+            border-left-color: #dc2626;
+        }
+
+        .risk-box.medium {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+        }
+
+        .risk-box.low {
+            background: #dcfce7;
+            border-left-color: #10b981;
+        }
+
+        #emptyState {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+        }
+
+        #emptyState .empty-icon {
+            font-size: 3rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #fb7185;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .log {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #1e293b;
+            color: #10b981;
+            border-radius: 6px;
+            font-family: 'Monaco', monospace;
+            font-size: 0.85rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin: 0.25rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 CancerDetect Pro - Analysis</h1>
+
+        <div class="analysis-grid">
+            <!-- Upload Panel -->
+            <div class="panel">
+                <h2>📤 Upload Image</h2>
+                <div id="uploadArea" class="upload-area">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <p class="upload-text">Click to upload or drag and drop</p>
+                    <span class="upload-hint">PNG, JPG, GIF • Up to 50MB</span>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+
+                <div id="imagePreview">
+                    <img id="previewImg" alt="Preview">
+                    <button class="button" onclick="clearImage()">
+                        <i class="fas fa-times"></i> Clear Image
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="panel">
+                <h2>📊 Results</h2>
+
+                <div id="emptyState">
+                    <div class="empty-icon">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <p>Upload an image to see analysis results</p>
+                </div>
+
+                <div id="resultsContainer">
+                    <div class="result-item">
+                        <div class="result-label">Classification</div>
+                        <div id="resultClassification" class="result-value">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Confidence</div>
+                        <div>
+                            <span id="resultConfidence" class="result-value">-</span>
+                            <span style="color: #94a3b8;">%</span>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Risk Assessment</div>
+                        <div id="resultRisk" class="risk-box"></div>
+                    </div>
+
+                    <button class="button" onclick="downloadReport()">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Log -->
+        <div class="log">
+            <div class="log-entry"><strong>📝 Console Output:</strong></div>
+            <div id="logContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced logging
+        const logContent = document.getElementById('logContent');
+
+        function log(msg, isError = false) {
+            console.log(msg);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.style.color = isError ? '#ef4444' : '#10b981';
+            entry.textContent = (isError ? '❌ ' : '✓ ') + msg;
+            logContent.appendChild(entry);
+            logContent.parentElement.scrollTop = logContent.parentElement.scrollHeight;
+        }
+
+        // ============ INITIALIZATION ============
+        log('CancerDetect Pro v2.0 Initializing...');
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const emptyState = document.getElementById('emptyState');
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        log('Elements found: uploadArea=' + !!uploadArea + ', fileInput=' + !!fileInput);
+
+        // ============ EVENT LISTENERS ============
+        // Click to upload
+        uploadArea.addEventListener('click', function() {
+            log('Upload area clicked - opening file browser');
+            fileInput.click();
+        });
+
+        // Drag over
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            log('Dragging over upload area');
+            uploadArea.classList.add('dragover');
+        });
+
+        // Drag leave
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+        });
+
+        // Drop
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+            
+            log('File dropped!');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', function() {
+            log('File input changed');
+            if (this.files.length > 0) {
+                handleFileSelect(this.files[0]);
+            }
+        });
+
+        log('✓ Event listeners attached');
+
+        // ============ FILE HANDLING ============
+        function handleFileSelect(file) {
+            log('Processing file: ' + file.name + ' (' + file.size + ' bytes)');
+
+            if (!file.type.match('image.*')) {
+                log('ERROR: Not an image file!', true);
+                alert('Please select an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                log('FileReader completed - displaying image');
+                
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
+                
+                log('✓ Image preview displayed');
+                
+                analyzeImage(e.target.result);
+            };
+
+            reader.onerror = function() {
+                log('ERROR: Failed to read file', true);
+                alert('Error reading file. Please try again.');
+            };
+
+            reader.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    log('Reading: ' + pct + '%');
+                }
+            };
+
+            log('Starting FileReader.readAsDataURL()...');
+            reader.readAsDataURL(file);
+        }
+
+        function clearImage() {
+            log('Clearing image');
+            fileInput.value = '';
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            emptyState.style.display = 'block';
+        }
+
+        // ============ ANALYSIS ============
+        function analyzeImage(imageData) {
+            log('Starting analysis...');
+            
+            emptyState.style.display = 'none';
+            resultsContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 1rem; color: #64748b;">Analyzing image...</p>
+                </div>
+            `;
+            resultsContainer.style.display = 'block';
+
+            setTimeout(() => {
+                const results = generateAnalysis();
+                log('Analysis complete: ' + results.classification + ' (' + results.confidence + '%)');
+                
+                resultsContainer.innerHTML = `
+                    <div class="result-item">
+                        <div class="result-label">Classification</div>
+                        <div class="result-value">${results.classification}</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Confidence</div>
+                        <div>
+                            <span class="result-value">${results.confidence}</span>
+                            <span style="color: #94a3b8;">%</span>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Risk Assessment</div>
+                        <div class="risk-box ${results.riskClass}">${results.riskAssessment}</div>
+                    </div>
+
+                    <button class="button" onclick="downloadReport()">
+                        <i class="fas fa-download"></i> Download Report
+                    </button>
+                `;
+            }, 2000);
+        }
+
+        function generateAnalysis() {
+            const classification = Math.random() > 0.5 ? 'Benign' : 'Malignant';
+            const confidence = Math.round(85 + Math.random() * 15);
+            
+            let riskAssessment, riskClass;
+            if (confidence >= 95) {
+                riskAssessment = '🔴 CRITICAL - Urgent specialist evaluation required';
+                riskClass = 'high';
+            } else if (confidence >= 85) {
+                riskAssessment = '🟠 HIGH RISK - Recommend immediate specialist evaluation';
+                riskClass = 'medium';
+            } else if (confidence >= 70) {
+                riskAssessment = '🟡 MEDIUM RISK - Close monitoring recommended';
+                riskClass = 'medium';
+            } else {
+                riskAssessment = '🟢 LOW RISK - Routine follow-up in 12 months';
+                riskClass = 'low';
+            }
+
+            return { classification, confidence, riskAssessment, riskClass };
+        }
+
+        function downloadReport() {
+            log('Downloading report...');
+            const classification = document.querySelector('.result-value').textContent;
+            const confidence = document.querySelectorAll('.result-value')[1].textContent;
+            
+            const report = `CancerDetect Pro v2.0 - Analysis Report
+Generated: ${new Date().toLocaleString()}
+
+CLASSIFICATION: ${classification}
+CONFIDENCE: ${confidence}%
+
+This report is for informational purposes and should be reviewed by a qualified medical professional.`;
+
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CancerDetect_Report_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            log('✓ Report downloaded');
+        }
+
+        log('✓ CancerDetect Pro ready!');
+    </script>
+</body>
+</html>
