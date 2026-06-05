@@ -69,7 +69,7 @@ def create_production_model():
 FEATURE_DATA = load_breast_cancer()
 FEATURE_NAMES = FEATURE_DATA.feature_names
 FEATURE_MEANS = np.mean(FEATURE_DATA.data, axis=0)
-FEATURE_STDS  = np.std(FEATURE_DATA.data, axis=0)
+FEATURE_STDS = np.std(FEATURE_DATA.data, axis=0)
 FEATURE_MINS  = np.min(FEATURE_DATA.data, axis=0)
 FEATURE_MAXS  = np.max(FEATURE_DATA.data, axis=0)
 
