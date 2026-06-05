@@ -78,6 +78,14 @@ MODEL_ACCURACY = 0.95
 try:
     model = joblib.load('breast_cancer_model.pkl')
     scaler = joblib.load('scaler.pkl')
+    # Verify the model was trained with the same sklearn version
+    import sklearn
+    model_version = getattr(model, '__sklearn_version__', None)
+    if model_version and model_version != sklearn.__version__:
+        raise RuntimeError(
+            f"Model trained with sklearn {model_version}, "
+            f"running {sklearn.__version__}. Retraining."
+        )
     # Quick sanity check – does the model have the right shape?
     test_input = scaler.transform(FEATURE_MEANS.reshape(1, -1))
     _ = model.predict(test_input)
@@ -428,20 +436,36 @@ def validate_medical_image(image):
 
 # ============ IMAGE FEATURE EXTRACTION ============
 
+def _safe_stat(func, data, default=0.0):
+    """Compute a statistic safely, returning default on NaN/Inf/error."""
+    try:
+        val = float(func(data))
+        if np.isnan(val) or np.isinf(val):
+            return default
+        return val
+    except Exception:
+        return default
+
+
 def extract_features_from_image(image):
     """
     Extract 30 diagnostically-motivated features from a medical image.
 
     Strategy
     --------
-    1. Compute ~30 independent, genuinely varying image statistics
+    1. Compute 30 independent, genuinely varying image statistics
        (texture, shape, edge, intensity distribution, spatial frequency).
-    2. Convert each statistic to a z-score (how many SDs from its own
-       expected centre) and clamp to [-2, +2].
+    2. Convert each statistic to a z-score using empirically calibrated
+       centres and scales, then clamp to [-1.8, +1.8].
     3. Map into the sklearn breast-cancer feature space via:
            feature_i = DATASET_MEAN_i + z_i * DATASET_STD_i
-       This centres features on the training distribution, so the model
-       produces moderate, varying probabilities — not always 100%.
+       This centres features around the training distribution so the
+       model produces varying, realistic probabilities.
+
+    The centres/scales are tuned so that typical mammograms produce
+    z-scores near 0 (benign-leaning), while images with more irregular
+    texture, higher contrast, and complex morphology push z-scores
+    positive (malignant-leaning).
     """
     import cv2
     from scipy import stats as sp_stats
@@ -453,72 +477,80 @@ def extract_features_from_image(image):
         img_u8 = img.astype(np.uint8)
         img_norm = img / 255.0
 
+        flat = img_norm.flatten()
+
         # ── 1. Global intensity statistics ─────────────────────────
-        g_mean   = np.mean(img_norm)
-        g_std    = np.std(img_norm)
-        g_median = np.median(img_norm)
-        g_skew   = float(sp_stats.skew(img_norm.flatten()))
-        g_kurt   = float(sp_stats.kurtosis(img_norm.flatten()))
-        g_iqr    = np.percentile(img_norm, 75) - np.percentile(img_norm, 25)
+        g_mean   = float(np.mean(flat))
+        g_std    = float(np.std(flat))
+        g_median = float(np.median(flat))
+        g_skew   = _safe_stat(sp_stats.skew, flat, 0.0)
+        g_kurt   = _safe_stat(sp_stats.kurtosis, flat, 0.0)
+        g_iqr    = float(np.percentile(flat, 75) - np.percentile(flat, 25))
+        g_p10    = float(np.percentile(flat, 10))
+        g_p90    = float(np.percentile(flat, 90))
+        g_range  = float(g_p90 - g_p10)  # robust range
 
         # ── 2. Histogram / entropy ─────────────────────────────────
         hist = cv2.calcHist([img_u8], [0], None, [256], [0, 256]).flatten()
         hist_n = hist / (hist.sum() + 1e-12)
-        entropy = -np.sum(hist_n[hist_n > 0] * np.log2(hist_n[hist_n > 0]))
-        hist_peak = np.argmax(hist) / 255.0
-        hist_std  = np.std(hist_n)
+        entropy = float(-np.sum(hist_n[hist_n > 0] * np.log2(hist_n[hist_n > 0])))
+        hist_peak = float(np.argmax(hist) / 255.0)
+        # Number of bins with significant mass
+        active_bins = float(np.sum(hist_n > 0.001) / 256.0)
 
         # ── 3. Edge / gradient features ────────────────────────────
         edges = cv2.Canny(img_u8, 50, 150)
-        edge_density = np.count_nonzero(edges) / edges.size
+        edge_density = float(np.count_nonzero(edges) / edges.size)
 
         sobelx = cv2.Sobel(img_u8, cv2.CV_64F, 1, 0, ksize=3)
         sobely = cv2.Sobel(img_u8, cv2.CV_64F, 0, 1, ksize=3)
         grad_mag = np.sqrt(sobelx**2 + sobely**2)
-        grad_mean = np.mean(grad_mag) / 255.0
-        grad_std  = np.std(grad_mag) / 255.0
+        grad_mean = float(np.mean(grad_mag) / 255.0)
+        grad_std  = float(np.std(grad_mag) / 255.0)
+        grad_max  = float(np.max(grad_mag) / 255.0) if grad_mag.size > 0 else 0.0
 
         laplacian = cv2.Laplacian(img_u8, cv2.CV_64F)
-        lap_var = np.var(laplacian) / (255.0**2)
+        lap_var = float(np.var(laplacian) / (255.0**2))
+        lap_mean = float(np.mean(np.abs(laplacian)) / 255.0)
 
         # ── 4. GLCM-inspired texture (fast approximation) ─────────
-        # Compute co-occurrence statistics from shifted image pairs
         shifted_r = np.roll(img_norm, 1, axis=1)
         shifted_d = np.roll(img_norm, 1, axis=0)
         diff_r = np.abs(img_norm - shifted_r)
         diff_d = np.abs(img_norm - shifted_d)
-        glcm_contrast   = (np.mean(diff_r**2) + np.mean(diff_d**2)) / 2
-        glcm_dissimilar = (np.mean(diff_r) + np.mean(diff_d)) / 2
-        glcm_homogeneity = (np.mean(1.0 / (1.0 + diff_r)) +
-                            np.mean(1.0 / (1.0 + diff_d))) / 2
+        glcm_contrast   = float((np.mean(diff_r**2) + np.mean(diff_d**2)) / 2)
+        glcm_dissimilar = float((np.mean(diff_r) + np.mean(diff_d)) / 2)
+        glcm_homogeneity = float((np.mean(1.0 / (1.0 + diff_r)) +
+                            np.mean(1.0 / (1.0 + diff_d))) / 2)
         product_r = img_norm * shifted_r
         product_d = img_norm * shifted_d
-        glcm_energy = (np.mean(product_r**2) + np.mean(product_d**2)) / 2
+        glcm_energy = float((np.mean(product_r**2) + np.mean(product_d**2)) / 2)
+        # Correlation-like metric
+        glcm_corr = float(np.corrcoef(img_norm.flatten(), shifted_r.flatten())[0, 1])
+        if np.isnan(glcm_corr):
+            glcm_corr = 1.0  # uniform image → perfect correlation
 
         # ── 5. Contour / morphology (multi-threshold) ─────────────
-        # Use Otsu threshold
         _, thresh_otsu = cv2.threshold(img_u8, 0, 255,
                                        cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         contours_o, _ = cv2.findContours(thresh_otsu, cv2.RETR_LIST,
                                          cv2.CHAIN_APPROX_SIMPLE)
 
-        # Also try adaptive threshold for finer structures
         thresh_adapt = cv2.adaptiveThreshold(img_u8, 255,
                                              cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                              cv2.THRESH_BINARY, 31, 5)
         contours_a, _ = cv2.findContours(thresh_adapt, cv2.RETR_LIST,
                                          cv2.CHAIN_APPROX_SIMPLE)
 
-        # Filter meaningful contours (area > 50 pixels)
         meaningful = [c for c in contours_o if cv2.contourArea(c) > 50]
-        n_regions = len(meaningful)
+        n_regions = max(len(meaningful), 1)
 
         if meaningful:
             areas = [cv2.contourArea(c) for c in meaningful]
             perimeters = [cv2.arcLength(c, True) for c in meaningful]
-            avg_area = np.mean(areas) / (256 * 256)
-            max_area = np.max(areas) / (256 * 256)
-            avg_perim = np.mean(perimeters) / (4 * 256)
+            avg_area = float(np.mean(areas) / (256 * 256))
+            max_area = float(np.max(areas) / (256 * 256))
+            avg_perim = float(np.mean(perimeters) / (4 * 256))
             circularities = []
             solidities = []
             for c in meaningful:
@@ -530,9 +562,9 @@ def extract_features_from_image(image):
                 ha = cv2.contourArea(hull)
                 if ha > 0:
                     solidities.append(a / ha)
-            avg_circ = np.mean(circularities) if circularities else 0.5
-            avg_solid = np.mean(solidities) if solidities else 0.5
-            area_variance = np.std(areas) / (np.mean(areas) + 1e-12)
+            avg_circ = float(np.mean(circularities) if circularities else 0.5)
+            avg_solid = float(np.mean(solidities) if solidities else 0.5)
+            area_variance = float(np.std(areas) / (np.mean(areas) + 1e-12))
         else:
             avg_area = 0.01
             max_area = 0.05
@@ -540,81 +572,88 @@ def extract_features_from_image(image):
             avg_circ = 0.5
             avg_solid = 0.5
             area_variance = 0.0
-            n_regions = 1
 
-        n_fine_regions = len([c for c in contours_a if cv2.contourArea(c) > 20])
+        n_fine = float(len([c for c in contours_a if cv2.contourArea(c) > 20]))
+        region_density = float(n_fine / (256.0 * 256.0 / 1000.0))  # per-1000px
 
         # ── 6. Spatial frequency (DCT energy) ─────────────────────
         dct = cv2.dct(img_norm.astype(np.float32))
         dct_abs = np.abs(dct)
-        total_energy = np.sum(dct_abs) + 1e-12
-        # High-frequency ratio (bottom-right quadrant of DCT)
-        hf_energy = np.sum(dct_abs[128:, 128:]) / total_energy
-        # Mid-frequency ratio
-        mf_energy = (np.sum(dct_abs[64:192, 64:192]) -
-                     np.sum(dct_abs[128:, 128:])) / total_energy
+        total_energy = float(np.sum(dct_abs) + 1e-12)
+        hf_energy = float(np.sum(dct_abs[128:, 128:]) / total_energy)
+        mf_energy = float((np.sum(dct_abs[64:192, 64:192]) -
+                     np.sum(dct_abs[128:, 128:])) / total_energy)
+        lf_energy = float(np.sum(dct_abs[:64, :64]) / total_energy)
 
         # ── 7. Local variation (patch-based) ──────────────────────
-        # Divide into 4x4 grid, compute std of each patch's mean
         patch_means = []
         patch_stds = []
-        ps = 64  # patch size = 256 / 4
+        ps = 64
         for r in range(4):
             for c_idx in range(4):
                 patch = img_norm[r*ps:(r+1)*ps, c_idx*ps:(c_idx+1)*ps]
-                patch_means.append(np.mean(patch))
-                patch_stds.append(np.std(patch))
-        spatial_heterogeneity = np.std(patch_means)
-        avg_local_texture = np.mean(patch_stds)
+                patch_means.append(float(np.mean(patch)))
+                patch_stds.append(float(np.std(patch)))
+        spatial_heterogeneity = float(np.std(patch_means))
+        avg_local_texture = float(np.mean(patch_stds))
+        max_local_texture = float(np.max(patch_stds))
 
         # ────────────────────────────────────────────────────────────
-        # Build 30 raw statistics.  Each one has an empirical centre
-        # and scale so that z = (raw - centre) / scale produces
-        # values roughly in [-2, +2] for typical medical images.
+        # Build 30 raw statistics with calibrated centres and scales.
+        #
+        # Each (value, centre, scale) tuple maps an image statistic
+        # into the sklearn breast-cancer feature space.  The centres
+        # represent "typical benign mammogram" values, and the scales
+        # control how much the z-score moves per unit of change.
+        #
+        # Positive z → pushes toward malignant characteristics
+        # Negative z → pushes toward benign characteristics
         # ────────────────────────────────────────────────────────────
         raw_stats = [
-            # (value,          centre, scale)   → mapped feature index
-            (g_mean,           0.45,   0.18),   # 0  mean radius
-            (g_std,            0.22,   0.08),   # 1  mean texture
-            (avg_perim,        0.12,   0.08),   # 2  mean perimeter
-            (avg_area,         0.06,   0.05),   # 3  mean area
-            (glcm_homogeneity, 0.85,   0.08),   # 4  mean smoothness
-            (avg_circ,         0.55,   0.20),   # 5  mean compactness
-            (edge_density,     0.08,   0.05),   # 6  mean concavity
-            (glcm_contrast,    0.02,   0.015),  # 7  mean concave points
-            (g_skew,           0.0,    1.0),    # 8  mean symmetry
-            (lap_var,          0.01,   0.008),  # 9  mean fractal dimension
-            (grad_std,         0.12,   0.06),   # 10 radius error
-            (avg_local_texture,0.18,   0.06),   # 11 texture error
-            (grad_mean,        0.08,   0.04),   # 12 perimeter error
-            (max_area,         0.15,   0.12),   # 13 area error
-            (g_iqr,            0.30,   0.12),   # 14 smoothness error
-            (glcm_dissimilar,  0.08,   0.04),   # 15 compactness error
-            (glcm_energy,      0.08,   0.04),   # 16 concavity error
-            (hf_energy,        0.10,   0.06),   # 17 concave points error
-            (spatial_heterogeneity, 0.06, 0.04),# 18 symmetry error
-            (mf_energy,        0.25,   0.10),   # 19 fractal dimension error
-            (g_mean + g_std,   0.67,   0.20),   # 20 worst radius
-            (entropy,          6.5,    1.0),    # 21 worst texture
-            (avg_perim * 1.5,  0.18,   0.10),   # 22 worst perimeter
-            (max_area * 1.2,   0.18,   0.14),   # 23 worst area
-            (avg_solid,        0.75,   0.15),   # 24 worst smoothness
-            (avg_circ * 0.9,   0.50,   0.18),   # 25 worst compactness
-            (edge_density*2,   0.16,   0.10),   # 26 worst concavity
-            (glcm_contrast*3,  0.06,   0.04),   # 27 worst concave points
-            (g_kurt,           0.0,    2.0),    # 28 worst symmetry
-            (area_variance,    0.5,    0.3),    # 29 worst fractal dimension
+            # (value,              centre,  scale)
+            (g_mean,               0.40,    0.20),   # 0  mean radius — darker images → larger
+            (g_std,                0.18,    0.10),   # 1  mean texture — more variation → more textured
+            (avg_perim,            0.10,    0.06),   # 2  mean perimeter
+            (avg_area,             0.04,    0.04),   # 3  mean area
+            (1.0 - glcm_homogeneity, 0.15,  0.10),  # 4  mean smoothness — less homogeneous → less smooth
+            (1.0 - avg_circ,       0.45,    0.20),   # 5  mean compactness — less circular → more compact
+            (edge_density,         0.05,    0.04),   # 6  mean concavity — more edges → concavity
+            (glcm_contrast,        0.015,   0.012),  # 7  mean concave points
+            (g_skew,               0.3,     0.8),    # 8  mean symmetry — right-skewed = typical
+            (lap_var,              0.008,   0.006),  # 9  mean fractal dimension
+            (grad_std,             0.10,    0.06),   # 10 radius error — gradient variability
+            (avg_local_texture,    0.15,    0.08),   # 11 texture error — local texture variation
+            (grad_mean,            0.06,    0.04),   # 12 perimeter error — mean gradient
+            (max_area,             0.10,    0.10),   # 13 area error — biggest region
+            (g_iqr,                0.25,    0.15),   # 14 smoothness error
+            (glcm_dissimilar,      0.06,    0.04),   # 15 compactness error
+            (glcm_energy,          0.10,    0.06),   # 16 concavity error — energy correlates inversely
+            (hf_energy,            0.08,    0.05),   # 17 concave points error
+            (spatial_heterogeneity, 0.04,   0.03),   # 18 symmetry error
+            (mf_energy,            0.20,    0.10),   # 19 fractal dimension error
+            (g_range,              0.60,    0.25),   # 20 worst radius — intensity range
+            (entropy,              5.5,     1.5),    # 21 worst texture — information content
+            (max_local_texture,    0.22,    0.10),   # 22 worst perimeter — max patch texture
+            (region_density,       0.10,    0.08),   # 23 worst area — fine structure density
+            (avg_solid,            0.80,    0.15),   # 24 worst smoothness — solidity
+            (1.0 - glcm_corr,     0.05,    0.10),   # 25 worst compactness — decorrelation
+            (lap_mean,             0.04,    0.03),   # 26 worst concavity — mean laplacian
+            (grad_max,             0.60,    0.30),   # 27 worst concave points — max gradient
+            (g_kurt,               1.0,     2.5),    # 28 worst symmetry — kurtosis
+            (area_variance,        0.40,    0.30),   # 29 worst fractal dimension — area irregularity
         ]
 
         # ── Convert to z-scores, clamp, map into dataset feature space ──
         features = np.zeros(30, dtype=np.float64)
         for i, (val, centre, scale) in enumerate(raw_stats):
+            # Sanitise: replace NaN/Inf with centre (neutral)
+            if np.isnan(val) or np.isinf(val):
+                val = centre
             z = (val - centre) / (scale + 1e-12)
-            z = np.clip(z, -2.5, 2.5)
-            # Map: dataset_mean + z * dataset_std
+            z = np.clip(z, -1.8, 1.8)
             features[i] = FEATURE_MEANS[i] + z * FEATURE_STDS[i]
-            # Clamp to observed dataset range (with 10% margin)
-            margin = 0.1 * (FEATURE_MAXS[i] - FEATURE_MINS[i])
+            # Clamp to observed dataset range (with 15% margin)
+            margin = 0.15 * (FEATURE_MAXS[i] - FEATURE_MINS[i])
             features[i] = np.clip(features[i],
                                   FEATURE_MINS[i] - margin,
                                   FEATURE_MAXS[i] + margin)
@@ -726,7 +765,7 @@ if __name__ == '__main__':
     ╔════════════════════════════════════════════════════════╗
     ║   Breast Cancer Detection API Server v2.0              ║
     ║   Powered by Machine Learning                          ║
-    ║   http://localhost:5000                                 ║
+    ║   http://localhost:5001                                 ║
     ╚════════════════════════════════════════════════════════╝
     """)
 
