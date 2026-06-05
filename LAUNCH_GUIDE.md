@@ -158,3 +158,5 @@ For issues or enhancements, refer to:
 - `README_PRODUCTION.md` - Complete documentation
 - `DOCUMENTATION.md` - Technical deep-dive
 - `BUGFIXES.md` - Known issues and solutions
+
+My project uses supervised learning for breast cancer classification. I used Logistic Regression because it is fast, interpretable, and gives around 98% accuracy. The pipeline takes an image, extracts features, scales them, and predicts whether it is benign or malignant. For evaluation, I focus on recall and F1-score because in medical applications missing a cancer case is more dangerous than false alarms.
